@@ -1,0 +1,41 @@
+{
+  "name": "cw2026-07-10",
+  "version": "1.0.0",
+  "description": "时空回廊 - Time Corridor 情感治愈平台",
+  "private": true,
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build",
+    "lint": "vue-cli-service lint"
+  },
+  "dependencies": {
+    "vue": "^2.7.16",
+    "vue-router": "^3.6.5",
+    "vuex": "^3.6.2",
+    "element-ui": "^2.15.14",
+    "axios": "^1.7.2",
+    "html2canvas": "^1.4.1",
+    "less": "^4.2.0",
+    "less-loader": "^11.1.4"
+  },
+  "devDependencies": {
+    "@vue/cli-plugin-eslint": "^5.0.8",
+    "@vue/cli-service": "^5.0.8",
+    "babel-plugin-component": "^1.1.1",
+    "eslint": "^8.57.0",
+    "eslint-plugin-vue": "^9.27.0",
+    "vue-template-compiler": "^2.7.16"
+  },
+  "eslintConfig": {
+    "root": true,
+    "env": { "node": true },
+    "extends": ["plugin:vue/essential", "eslint:recommended"],
+    "parserOptions": {},
+    "rules": {
+      "vue/multi-word-component-names": "off",
+      "vue/no-reserved-component-names": "off",
+      "no-unused-vars": "warn"
+    }
+  },
+  "browserslist": ["> 1%", "last 2 versions", "not dead"]
+}

@@ -1,0 +1,75 @@
+.dark-mode {
+  background-color: @dark-bg-color;
+  color: @dark-text-color;
+  
+  .card { 
+    background: @dark-card-bg; 
+    box-shadow: @shadow-dark-card;
+    border-color: @dark-border-color;
+  }
+  
+  .el-input__inner, .el-textarea__inner {
+    background-color: @dark-card-bg;
+    border-color: @dark-border-color;
+    color: @dark-text-color;
+    
+    &::placeholder {
+      color: @dark-text-muted;
+    }
+  }
+  
+  .el-dialog { 
+    background: @dark-card-bg;
+    box-shadow: @shadow-dark-lg;
+    
+    .el-dialog__title { 
+      color: @dark-text-color; 
+    }
+    
+    .el-dialog__body {
+      color: @dark-text-secondary;
+    }
+  }
+  
+  .el-card {
+    background: @dark-card-bg;
+    border-color: @dark-border-color;
+    color: @dark-text-color;
+  }
+  
+  .el-pagination .el-pagination__total, 
+  .el-pagination .el-pagination__jump { 
+    color: @dark-text-secondary; 
+  }
+  
+  .el-tag { 
+    background-color: @dark-card-bg-elevated; 
+    border-color: @dark-border-color; 
+    color: @dark-text-color; 
+  }
+  
+  .page-title { 
+    color: @dark-text-color; 
+  }
+  
+  .page-subtitle { 
+    color: @dark-text-secondary; 
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    color: @dark-text-color;
+  }
+  
+  ::selection {
+    background: rgba(232, 155, 108, 0.3);
+    color: @dark-text-color;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: @dark-text-muted;
+    
+    &:hover {
+      background: @dark-text-secondary;
+    }
+  }
+}
