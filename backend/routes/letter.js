@@ -1,6 +1,6 @@
 const Router = require('koa-router')
-const { run, get, all } = require('../db')
-const { auth } = require('../middleware/auth')
+const { run, get, all, transaction } = require('../db')
+const { auth, verifyToken } = require('../middleware/auth')
 const { validateId, validatePagination, validateString, validateArray, toBoolean, handleValidationError } = require('../utils/validate')
 
 const router = new Router({ prefix: '/api/letters' })
@@ -29,10 +29,12 @@ router.post('/', auth, async (ctx) => {
 
 // 获取我的信件
 router.get('/my', auth, async (ctx) => {
+  const { page, size, offset } = validatePagination(ctx, { page: 1, size: 100, maxSize: 200 })
   const letters = await all(`
-    SELECT * FROM letters WHERE user_id = ? ORDER BY created_at DESC
-  `, [ctx.state.user.id])
-  ctx.body = { code: 200, data: letters }
+    SELECT * FROM letters WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?
+  `, [ctx.state.user.id, size, offset])
+  const { total } = await get('SELECT COUNT(*) as total FROM letters WHERE user_id = ?', [ctx.state.user.id])
+  ctx.body = { code: 200, data: { list: letters, total, page, size } }
 })
 
 // 获取公开信件（故事墙）
@@ -103,11 +105,9 @@ router.get('/:id', async (ctx) => {
   }
 
   // 验证 token
-  const jwt = require('jsonwebtoken')
-  const JWT_SECRET = process.env.JWT_SECRET || 'time-corridor-dev-default-change-me'
   let user = null
   try {
-    user = jwt.verify(token, JWT_SECRET)
+    user = verifyToken(token)
   } catch (err) {
     ctx.status = 404
     ctx.body = { code: 404, message: '信件不存在' }
@@ -155,9 +155,10 @@ router.delete('/:id', auth, async (ctx) => {
     ctx.body = { code: 403, message: '无权删除' }
     return
   }
-  await run('DELETE FROM letters WHERE id = ?', [id])
-  // 同时删除相关共鸣记录
-  await run('DELETE FROM letter_likes WHERE letter_id = ?', [id])
+  await transaction(async () => {
+    await run('DELETE FROM letters WHERE id = ?', [id])
+    await run('DELETE FROM letter_likes WHERE letter_id = ?', [id])
+  })
   ctx.body = { code: 200, message: '删除成功' }
 })
 
@@ -181,32 +182,30 @@ router.post('/:id/like', auth, async (ctx) => {
     return
   }
 
-  // 检查是否已共鸣
-  const existing = await get(
-    'SELECT id FROM letter_likes WHERE user_id = ? AND letter_id = ?',
-    [userId, letterId]
-  )
-
-  if (existing) {
-    // 取消共鸣
-    await run('DELETE FROM letter_likes WHERE user_id = ? AND letter_id = ?', [userId, letterId])
-    await run('UPDATE letters SET likes = likes - 1 WHERE id = ?', [letterId])
-    ctx.body = { code: 200, message: '已取消共鸣', data: { liked: false } }
-  } else {
-    // 新增共鸣
-    try {
-      await run(
-        'INSERT INTO letter_likes (user_id, letter_id) VALUES (?, ?)',
+  try {
+    const result = await transaction(async () => {
+      const existing = await get(
+        'SELECT id FROM letter_likes WHERE user_id = ? AND letter_id = ?',
         [userId, letterId]
       )
-    } catch (e) {
-      // 唯一约束冲突
-      ctx.status = 400
-      ctx.body = { code: 400, message: '已共鸣过了' }
-      return
-    }
-    await run('UPDATE letters SET likes = likes + 1 WHERE id = ?', [letterId])
-    ctx.body = { code: 200, message: '共鸣成功', data: { liked: true } }
+
+      if (existing) {
+        await run('DELETE FROM letter_likes WHERE user_id = ? AND letter_id = ?', [userId, letterId])
+        await run('UPDATE letters SET likes = likes - 1 WHERE id = ?', [letterId])
+        return { liked: false }
+      } else {
+        await run(
+          'INSERT INTO letter_likes (user_id, letter_id) VALUES (?, ?)',
+          [userId, letterId]
+        )
+        await run('UPDATE letters SET likes = likes + 1 WHERE id = ?', [letterId])
+        return { liked: true }
+      }
+    })
+    ctx.body = { code: 200, message: result.liked ? '共鸣成功' : '已取消共鸣', data: result }
+  } catch (e) {
+    ctx.status = 400
+    ctx.body = { code: 400, message: '操作失败，请稍后重试' }
   }
 })
 

@@ -55,8 +55,8 @@ async function generateAIReply(content, recipient, moods, types) {
   let body = ''
   try {
     const res = await aiApi.generateReply({ content, recipient, moods, types })
-    if (res.data && res.data.data && res.data.data.reply) {
-      body = res.data.data.reply
+    if (res && res.reply) {
+      body = res.reply
       console.log('[AI] 后端 API 调用成功，返回长度:', body.length)
     }
   } catch (err) {

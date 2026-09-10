@@ -81,8 +81,9 @@ const actions = {
     const hasToken = !!tokenStorage.getToken()
     if (hasToken) {
       try {
-        const favorites = await quoteApi.getFavorites()
-        if (favorites && favorites.length > 0) {
+        const data = await quoteApi.getFavorites()
+        const favorites = (data && data.list) || []
+        if (favorites.length > 0) {
           const formatted = favorites.map((f, idx) => ({
             text: f.quote_text,
             source: f.quote_source || '',

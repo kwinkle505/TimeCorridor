@@ -148,6 +148,13 @@
               show-password
             />
           </el-form-item>
+          <el-form-item label="性别">
+            <el-radio-group v-model="registerForm.gender">
+              <el-radio label="male">男</el-radio>
+              <el-radio label="female">女</el-radio>
+              <el-radio label="secret">保密</el-radio>
+            </el-radio-group>
+          </el-form-item>
           <el-form-item>
             <el-button
               type="primary"
@@ -193,7 +200,8 @@ export default {
         username: '',
         nickname: '',
         password: '',
-        confirmPassword: ''
+        confirmPassword: '',
+        gender: 'secret'
       },
       loginRules: {
         username: [
@@ -260,7 +268,8 @@ export default {
         })
         if (result.success) {
           this.$message.success(result.message || '登录成功，欢迎回来！')
-          this.$router.push('/')
+          const redirect = this.$route.query.redirect
+          this.$router.push(redirect || '/')
         } else {
           // 判断是否是用户不存在的情况
           this.$confirm(result.message || '登录失败', '提示', {
@@ -280,7 +289,8 @@ export default {
         const result = await this.register({
           username: this.registerForm.username,
           password: this.registerForm.password,
-          nickname: this.registerForm.nickname
+          nickname: this.registerForm.nickname,
+          gender: this.registerForm.gender
         })
         if (result.success) {
           this.$message.success(result.message || '注册成功，请登录')

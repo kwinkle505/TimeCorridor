@@ -1,7 +1,15 @@
 const jwt = require('jsonwebtoken')
 
-// JWT 密钥：优先从环境变量读取，开发环境允许使用默认值（会有警告）
-const JWT_SECRET = process.env.JWT_SECRET || 'time-corridor-dev-default-change-me'
+if (!process.env.JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET 未配置，请在 .env 文件中设置')
+  process.exit(1)
+}
+
+const JWT_SECRET = process.env.JWT_SECRET
+
+function verifyToken(token) {
+  return jwt.verify(token, JWT_SECRET)
+}
 
 // 验证用户登录
 async function auth(ctx, next) {
@@ -41,4 +49,4 @@ function generateToken(user) {
   )
 }
 
-module.exports = { auth, admin, generateToken }
+module.exports = { auth, admin, generateToken, verifyToken }

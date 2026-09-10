@@ -5,17 +5,21 @@
 
 const Router = require('koa-router')
 const { auth } = require('../middleware/auth')
+const { rateLimit } = require('../middleware/rateLimit')
+const { get } = require('../db')
 const { generateLetterReply, generateTreeholeReply } = require('../services/ai')
 const { validateString, validateArray, handleValidationError } = require('../utils/validate')
 
 const router = new Router({ prefix: '/api/ai' })
+
+const aiLimit = rateLimit({ windowMs: 60000, max: 10, keyFn: (ctx) => 'ai_' + ctx.state.user.id })
 
 /**
  * 生成信件 AI 回信
  * POST /api/ai/reply
  * Body: { content, recipient, moods, types }
  */
-router.post('/reply', auth, async (ctx) => {
+router.post('/reply', auth, aiLimit, async (ctx) => {
   try {
     const { content, recipient, moods, types } = ctx.request.body
 
@@ -32,11 +36,14 @@ router.post('/reply', auth, async (ctx) => {
     })
     const validMoods = validateArray(moods).slice(0, 5)
 
+    const user = await get('SELECT gender FROM users WHERE id = ?', [ctx.state.user.id])
+
     const reply = await generateLetterReply({
       content: validContent,
       recipient: validRecipient || '自己',
       moods: validMoods,
-      types: types || 'comfort'
+      types: types || 'comfort',
+      gender: user ? user.gender : 'secret'
     })
 
     ctx.body = {
@@ -57,7 +64,7 @@ router.post('/reply', auth, async (ctx) => {
  * POST /api/ai/treehole
  * Body: { content, emotion }
  */
-router.post('/treehole', auth, async (ctx) => {
+router.post('/treehole', auth, aiLimit, async (ctx) => {
   try {
     const { content, emotion } = ctx.request.body
 
@@ -73,9 +80,12 @@ router.post('/treehole', auth, async (ctx) => {
       field: '情绪'
     })
 
+    const user = await get('SELECT gender FROM users WHERE id = ?', [ctx.state.user.id])
+
     const reply = await generateTreeholeReply({
       content: validContent,
-      emotion: validEmotion || '平静'
+      emotion: validEmotion || '平静',
+      gender: user ? user.gender : 'secret'
     })
 
     ctx.body = {

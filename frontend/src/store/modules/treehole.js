@@ -3,8 +3,7 @@
  * 管理用户在树洞的倾诉记录，通过后端 API 操作
  */
 
-import { treeholeApi, aiApi } from '@/api'
-import { generateId } from '@/utils/helpers'
+import { treeholeApi } from '@/api'
 import { getReply, getSong } from '@/utils/treeholeReplies'
 
 const state = {
@@ -43,9 +42,10 @@ const actions = {
   async initData({ commit }) {
     commit('SET_LOADING', true)
     try {
-      const messages = await treeholeApi.getMyMessages()
+      const data = await treeholeApi.getMyMessages()
+      const messages = (data && data.list) || []
       // 转换后端格式为前端格式
-      const formatted = (messages || []).map(m => ({
+      const formatted = messages.map(m => ({
         id: m.id,
         type: m.type || 'user',
         content: m.content || '',
@@ -64,37 +64,22 @@ const actions = {
   },
 
   /**
-   * 保存倾诉消息（包含AI回复）
+   * 保存倾诉消息（后端生成AI回复）
    */
   async saveMessage({ commit, state }, payload) {
     const { content, emotion } = payload
     const now = new Date().toISOString()
     const emotionText = (emotion || '平静').replace(/^[^\u4e00-\u9fa5]+/, '')
 
-    // 1. 生成AI回复
-    let reply = ''
-    let song = null
-    try {
-      const res = await aiApi.generateTreeholeReply({ content, emotion: emotionText })
-      if (res.data && res.data.data && res.data.data.reply) {
-        reply = res.data.data.reply
-      }
-    } catch (err) {
-      console.warn('树洞AI调用失败，降级到模板:', err.message)
-    }
-    if (!reply) {
-      reply = getReply(emotionText)
-      song = getSong(emotionText)
-    }
-
-    // 2. 发送到后端
     try {
       const result = await treeholeApi.submitMessage({
         content: content || '',
-        emotion: emotion || '😌平静',
-        reply: reply,
-        song: song || ''
+        emotion: emotion || '😌平静'
       })
+
+      const reply = (result && result.reply) || getReply(emotionText)
+      const song = getSong(emotionText)
+
       // 用户消息
       const userMsg = {
         id: 'th_u_' + (result && result.id ? result.id : Date.now()),

@@ -38,7 +38,7 @@ function getSigner(recipient) {
 }
 
 // ==================== 写信 Prompt 构造 ====================
-function buildLetterPrompt(content, recipient, moods, types) {
+function buildLetterPrompt(content, recipient, moods, types, gender) {
   const moodStr = moods && moods.length ? moods.join('、') : '平静'
   const recipientName = (recipient || '自己').replace('十年后的', '')
   const typeDesc = {
@@ -81,7 +81,14 @@ function buildLetterPrompt(content, recipient, moods, types) {
       '- 要体现"十年后我们依然在一起"（或"十年后我依然爱你"）的深情\n\n'
   }
 
+  const genderHint = gender === 'male'
+    ? '写信人是男性。'
+    : gender === 'female'
+      ? '写信人是女性。'
+      : ''
+
   return '你是"' + replierIdentity + '"，正在给写信人回信。你拥有十年后的视角，知道事情后来如何发展。\n\n' +
+    (genderHint ? genderHint + '\n\n' : '') +
     perspectiveGuide +
     '【四条铁律，违反任何一条都算失败】\n' +
     '1. 来信中提到的每一个具体细节（人名、地点、物品、事件、感受），回信必须直接提及并回应，绝对不能泛泛而谈。\n' +
@@ -115,8 +122,15 @@ function buildLetterPrompt(content, recipient, moods, types) {
 }
 
 // ==================== 树洞 Prompt 构造 ====================
-function buildTreeholePrompt(content, emotion) {
+function buildTreeholePrompt(content, emotion, gender) {
+  const genderHint = gender === 'male'
+    ? '倾诉者是男性。'
+    : gender === 'female'
+      ? '倾诉者是女性。'
+      : ''
+
   return '你是一个温柔、善解人意的树洞精灵，正在倾听一个人的心事并给予回应。\n\n' +
+    (genderHint ? genderHint + '\n' : '') +
     '对方此刻的心情：' + (emotion || '平静') + '\n' +
     '对方说的话：' + content + '\n\n' +
     '要求：\n' +
@@ -224,8 +238,8 @@ async function callAI(prompt) {
  * @param {string[]|string} params.types - 信件类型
  * @returns {Promise<string>} 回信正文（不含称呼落款）
  */
-async function generateLetterReply({ content, recipient, moods, types }) {
-  const prompt = buildLetterPrompt(content, recipient, moods, types)
+async function generateLetterReply({ content, recipient, moods, types, gender }) {
+  const prompt = buildLetterPrompt(content, recipient, moods, types, gender)
   const reply = await callAI(prompt)
   if (reply) return reply
 
@@ -241,8 +255,8 @@ async function generateLetterReply({ content, recipient, moods, types }) {
  * @param {string} params.emotion - 情绪
  * @returns {Promise<string>} 树洞回复
  */
-async function generateTreeholeReply({ content, emotion }) {
-  const prompt = buildTreeholePrompt(content, emotion)
+async function generateTreeholeReply({ content, emotion, gender }) {
+  const prompt = buildTreeholePrompt(content, emotion, gender)
   const reply = await callAI(prompt)
   if (reply) return reply
 

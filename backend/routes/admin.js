@@ -1,5 +1,5 @@
 const Router = require('koa-router')
-const { db, run, get, all } = require('../db')
+const { db, run, get, all, transaction } = require('../db')
 const { admin } = require('../middleware/auth')
 const { validateId, validatePagination } = require('../utils/validate')
 
@@ -196,7 +196,10 @@ router.delete('/letters/:id', admin, async (ctx) => {
   const id = validateId(ctx)
   if (!id) return
 
-  await run('DELETE FROM letters WHERE id = ?', [id])
+  await transaction(async () => {
+    await run('DELETE FROM letters WHERE id = ?', [id])
+    await run('DELETE FROM letter_likes WHERE letter_id = ?', [id])
+  })
   ctx.body = { code: 200, message: '删除成功' }
 })
 

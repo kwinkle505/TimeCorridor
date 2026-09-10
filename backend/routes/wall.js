@@ -1,5 +1,5 @@
 const Router = require('koa-router')
-const { run, get, all } = require('../db')
+const { run, get, all, transaction } = require('../db')
 const { auth } = require('../middleware/auth')
 const { validateId, validatePagination, validateString, validateEnum, getLocalDateString, handleValidationError } = require('../utils/validate')
 
@@ -71,31 +71,30 @@ router.post('/:id/like', auth, async (ctx) => {
     return
   }
 
-  // 检查是否已点赞
-  const existing = await get(
-    'SELECT id FROM wall_likes WHERE user_id = ? AND message_id = ?',
-    [userId, messageId]
-  )
-
-  if (existing) {
-    // 取消点赞
-    await run('DELETE FROM wall_likes WHERE user_id = ? AND message_id = ?', [userId, messageId])
-    await run('UPDATE wall_messages SET likes = likes - 1 WHERE id = ?', [messageId])
-    ctx.body = { code: 200, message: '已取消点赞', data: { liked: false } }
-  } else {
-    // 新增点赞
-    try {
-      await run(
-        'INSERT INTO wall_likes (user_id, message_id) VALUES (?, ?)',
+  try {
+    const result = await transaction(async () => {
+      const existing = await get(
+        'SELECT id FROM wall_likes WHERE user_id = ? AND message_id = ?',
         [userId, messageId]
       )
-    } catch (e) {
-      ctx.status = 400
-      ctx.body = { code: 400, message: '已点赞过了' }
-      return
-    }
-    await run('UPDATE wall_messages SET likes = likes + 1 WHERE id = ?', [messageId])
-    ctx.body = { code: 200, message: '点赞成功', data: { liked: true } }
+
+      if (existing) {
+        await run('DELETE FROM wall_likes WHERE user_id = ? AND message_id = ?', [userId, messageId])
+        await run('UPDATE wall_messages SET likes = likes - 1 WHERE id = ?', [messageId])
+        return { liked: false }
+      } else {
+        await run(
+          'INSERT INTO wall_likes (user_id, message_id) VALUES (?, ?)',
+          [userId, messageId]
+        )
+        await run('UPDATE wall_messages SET likes = likes + 1 WHERE id = ?', [messageId])
+        return { liked: true }
+      }
+    })
+    ctx.body = { code: 200, message: result.liked ? '点赞成功' : '已取消点赞', data: result }
+  } catch (e) {
+    ctx.status = 400
+    ctx.body = { code: 400, message: '操作失败，请稍后重试' }
   }
 })
 

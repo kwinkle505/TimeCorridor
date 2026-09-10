@@ -32,6 +32,19 @@ function all(sql, params = []) {
   })
 }
 
+// 事务辅助
+async function transaction(callback) {
+  await run('BEGIN')
+  try {
+    const result = await callback({ run, get, all })
+    await run('COMMIT')
+    return result
+  } catch (err) {
+    await run('ROLLBACK')
+    throw err
+  }
+}
+
 // 初始化表
 async function initTables() {
   // 用户表
@@ -131,6 +144,13 @@ async function initTables() {
     )
   `)
 
+  // 给 users 表增加 gender 字段（兼容旧数据库）
+  try {
+    await run("ALTER TABLE users ADD COLUMN gender TEXT DEFAULT 'secret'")
+  } catch (e) {
+    // 字段已存在则忽略
+  }
+
   // 给 letters 表增加 likes 字段（兼容旧数据库）
   try {
     await run('ALTER TABLE letters ADD COLUMN likes INTEGER DEFAULT 0')
@@ -184,9 +204,31 @@ async function initTables() {
     )
   `)
 
+  // ========== 索引 ==========
+  const indexes = [
+    'CREATE INDEX IF NOT EXISTS idx_letters_user_id ON letters(user_id)',
+    'CREATE INDEX IF NOT EXISTS idx_letters_public ON letters(is_public)',
+    'CREATE INDEX IF NOT EXISTS idx_capsules_user_id ON capsules(user_id)',
+    'CREATE INDEX IF NOT EXISTS idx_capsules_public ON capsules(is_public)',
+    'CREATE INDEX IF NOT EXISTS idx_wall_user_id ON wall_messages(user_id)',
+    'CREATE INDEX IF NOT EXISTS idx_treehole_user_id ON treehole_messages(user_id)',
+    'CREATE INDEX IF NOT EXISTS idx_quotes_user_id ON quote_favorites(user_id)',
+    'CREATE INDEX IF NOT EXISTS idx_challenge_user_id ON challenge_records(user_id)',
+    'CREATE INDEX IF NOT EXISTS idx_challenge_date ON challenge_records(date)',
+    'CREATE INDEX IF NOT EXISTS idx_letter_likes_user ON letter_likes(user_id)',
+    'CREATE INDEX IF NOT EXISTS idx_letter_likes_letter ON letter_likes(letter_id)',
+    'CREATE INDEX IF NOT EXISTS idx_capsule_likes_user ON capsule_likes(user_id)',
+    'CREATE INDEX IF NOT EXISTS idx_capsule_likes_capsule ON capsule_likes(capsule_id)',
+    'CREATE INDEX IF NOT EXISTS idx_wall_likes_user ON wall_likes(user_id)',
+    'CREATE INDEX IF NOT EXISTS idx_wall_likes_message ON wall_likes(message_id)'
+  ]
+  for (const sql of indexes) {
+    await run(sql)
+  }
+
   console.log('数据库表初始化完成')
 }
 
 initTables().catch(console.error)
 
-module.exports = { db, run, get, all }
+module.exports = { db, run, get, all, transaction }

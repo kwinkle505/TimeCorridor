@@ -8,7 +8,7 @@ const router = new Router({ prefix: '/api/user' })
 // 获取当前用户信息
 router.get('/profile', auth, async (ctx) => {
   const user = await get(`
-    SELECT id, username, nickname, role, avatar, created_at
+    SELECT id, username, nickname, role, avatar, gender, created_at
     FROM users WHERE id = ?
   `, [ctx.state.user.id])
 
@@ -29,14 +29,20 @@ router.get('/profile', auth, async (ctx) => {
 
 // 更新用户信息
 router.put('/profile', auth, async (ctx) => {
-  const { nickname, avatar } = ctx.request.body
+  const { nickname, avatar, gender } = ctx.request.body
 
   try {
     const validNickname = validateString(nickname, { required: false, max: 30, field: '昵称' })
     const validAvatar = validateString(avatar, { required: false, max: 500, field: '头像' })
+    const safeGender = ['male', 'female', 'secret'].includes(gender) ? gender : undefined
 
-    await run('UPDATE users SET nickname = ?, avatar = ? WHERE id = ?',
-      [validNickname || null, validAvatar || null, ctx.state.user.id])
+    if (safeGender !== undefined) {
+      await run('UPDATE users SET nickname = ?, avatar = ?, gender = ? WHERE id = ?',
+        [validNickname || null, validAvatar || null, safeGender, ctx.state.user.id])
+    } else {
+      await run('UPDATE users SET nickname = ?, avatar = ? WHERE id = ?',
+        [validNickname || null, validAvatar || null, ctx.state.user.id])
+    }
     ctx.body = { code: 200, message: '更新成功' }
   } catch (err) {
     if (!handleValidationError(ctx, err)) throw err
@@ -49,7 +55,7 @@ router.put('/password', auth, async (ctx) => {
 
   try {
     validateString(oldPassword, { required: true, field: '原密码' })
-    validateString(newPassword, { required: true, min: 4, max: 30, field: '新密码' })
+    validateString(newPassword, { required: true, min: 6, max: 30, field: '新密码' })
   } catch (err) {
     if (!handleValidationError(ctx, err)) throw err
     return

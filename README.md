@@ -6,6 +6,38 @@
 
 ---
 
+## 项目预览
+
+### 首页
+
+![首页](docs/screenshots/home.png)
+
+### 登录 / 注册
+
+![登录注册](docs/screenshots/login.png)
+
+### 写信
+
+![写信](docs/screenshots/write.png)
+
+### AI 回信
+
+![AI回信](docs/screenshots/reply.png)
+
+### 情绪树洞
+
+![树洞](docs/screenshots/treehole.png)
+
+### 时光胶囊
+
+![时光胶囊](docs/screenshots/capsule.png)
+
+### 故事墙
+
+![故事墙](docs/screenshots/stories.png)
+
+---
+
 ## 功能特性
 
 ### 给未来写信
@@ -77,14 +109,17 @@ TimeCorridor/
 │
 ├── backend/              # 后端 Node.js 项目
 │   ├── routes/           # API 路由
-│   ├── middleware/       # 中间件
-│   ├── services/         # 服务层
+│   ├── middleware/       # 中间件（认证、限流）
+│   ├── services/         # 服务层（AI 调用）
+│   ├── utils/            # 工具函数（输入校验）
 │   ├── scripts/          # 脚本
 │   ├── server.js         # 入口文件
 │   ├── db.js             # 数据库初始化
 │   ├── seed.js           # 演示数据种子
 │   └── package.json
 │
+├── docs/
+│   └── screenshots/      # 项目截图
 ├── .gitignore
 ├── LICENSE
 └── README.md

@@ -8,8 +8,8 @@ const TOKEN_KEY = 'tc_token'
 // 这样无论从 localhost 还是局域网 IP 访问都能正确连接后端
 function getBaseUrl() {
   if (process.env.VUE_APP_API_URL) return process.env.VUE_APP_API_URL
-  const host = window.location.hostname
-  return 'http://' + host + ':3000'
+  // 开发环境：使用相对路径走 devServer 代理，避免跨域和端口不一致问题
+  return ''
 }
 
 const api = axios.create({

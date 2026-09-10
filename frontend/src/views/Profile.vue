@@ -4,6 +4,22 @@
       <h1 class="page-title">👤 我的时空足迹</h1>
       <p class="page-subtitle">记录你在时空回廊的每一步</p>
 
+      <!-- 用户信息 -->
+      <div class="user-info-section card" v-if="currentUser">
+        <div class="user-info-row">
+          <span class="info-label">昵称</span>
+          <span class="info-value">{{ currentUser.nickname }}</span>
+        </div>
+        <div class="user-info-row">
+          <span class="info-label">性别</span>
+          <el-radio-group v-model="editGender" size="mini" @change="updateGender">
+            <el-radio-button label="male">男</el-radio-button>
+            <el-radio-button label="female">女</el-radio-button>
+            <el-radio-button label="secret">保密</el-radio-button>
+          </el-radio-group>
+        </div>
+      </div>
+
       <!-- 统计卡片 -->
       <div class="stats-grid">
         <div class="stat-card card" v-for="s in statCards" :key="s.label">
@@ -58,14 +74,15 @@
 <script>
 import { mapState, mapGetters } from 'vuex'
 import storage from '@/utils/storage'
-import { migrateApi } from '@/api'
+import { migrateApi, userApi } from '@/api'
 
 export default {
   name: 'Profile',
   data() {
     return {
       migrating: false,
-      migrateResult: ''
+      migrateResult: '',
+      editGender: 'secret'
     }
   },
   computed: {
@@ -103,6 +120,26 @@ export default {
       })
     }
   },
+  mounted() {
+    if (this.currentUser && this.currentUser.gender) {
+      this.editGender = this.currentUser.gender
+    }
+    this.$store.dispatch('letter/initData')
+    this.$store.dispatch('capsule/initData')
+    this.$store.dispatch('treehole/initData')
+    this.$store.dispatch('wall/initData')
+    this.$store.dispatch('settings/syncCollectedQuotes')
+  },
+  watch: {
+    currentUser: {
+      handler(user) {
+        if (user && user.gender) {
+          this.editGender = user.gender
+        }
+      },
+      immediate: true
+    }
+  },
   methods: {
     formatDate(d) {
       if (!d) return ''
@@ -129,6 +166,16 @@ export default {
     },
     removeFav(fav) {
       this.$store.dispatch('settings/toggleQuoteFavorite', fav)
+    },
+    async updateGender() {
+      try {
+        await userApi.updateProfile({ gender: this.editGender })
+        this.$store.commit('auth/SET_USER', { ...this.currentUser, gender: this.editGender })
+        storage.set('current_user', { ...this.currentUser, gender: this.editGender })
+        this.$message.success('性别已更新')
+      } catch (err) {
+        this.$message.error('更新失败')
+      }
     },
     async migrateOldData() {
       // 从 localStorage 读取旧数据
@@ -179,6 +226,10 @@ export default {
 
 <style lang="less" scoped>
 .profile-page { padding: 48px 0 80px; }
+.user-info-section { padding: 24px; margin-bottom: 32px; }
+.user-info-row { display: flex; align-items: center; gap: 16px; padding: 8px 0; }
+.info-label { font-size: 14px; color: @text-secondary; min-width: 60px; }
+.info-value { font-size: 15px; color: @text-color; font-weight: 500; }
 .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 48px; }
 .stat-card { text-align: center; padding: 24px 16px; }
 .stat-icon { font-size: 32px; margin-bottom: 8px; }

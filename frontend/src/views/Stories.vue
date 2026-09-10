@@ -304,10 +304,7 @@ export default {
       if (!letter) return false
       var user = this.$store.state.auth.user
       if (!user) return false
-      if (letter.author) {
-        return letter.author === user.username || letter.author === user.nickname
-      }
-      return true
+      return letter.userId === user.id || user.role === 'admin'
     },
 
     handleDelete(id) {

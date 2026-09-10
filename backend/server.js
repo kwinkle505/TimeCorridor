@@ -32,13 +32,41 @@ function loadEnv() {
 }
 loadEnv()
 
-// 启动前关键配置检查
-if (!process.env.JWT_SECRET) {
-  console.warn('[警告] JWT_SECRET 未配置，将使用不安全的默认值！请在 .env 中设置 JWT_SECRET')
-}
-
 const app = new Koa()
 const router = new Router()
+
+// 全局错误处理
+app.use(async (ctx, next) => {
+  try {
+    await next()
+  } catch (err) {
+    ctx.status = err.status || 500
+    ctx.body = {
+      code: err.status || 500,
+      message: err.expose ? err.message : '服务器内部错误'
+    }
+    console.error('[Error]', err)
+  }
+})
+
+// 安全响应头
+app.use(async (ctx, next) => {
+  await next()
+  ctx.set('X-Content-Type-Options', 'nosniff')
+  ctx.set('X-Frame-Options', 'DENY')
+  ctx.set('X-XSS-Protection', '1; mode=block')
+  ctx.set('Referrer-Policy', 'no-referrer')
+  if (ctx.protocol === 'https') {
+    ctx.set('Strict-Transport-Security', 'max-age=31536000')
+  }
+})
+
+process.on('unhandledRejection', (err) => {
+  console.error('[FATAL] Unhandled Rejection:', err)
+})
+process.on('uncaughtException', (err) => {
+  console.error('[FATAL] Uncaught Exception:', err)
+})
 
 // CORS 配置：从环境变量读取允许的源，开发环境默认允许 localhost
 const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:8080,http://localhost:5173')

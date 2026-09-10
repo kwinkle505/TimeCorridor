@@ -1,7 +1,7 @@
 const Router = require('koa-router')
-const { run, all } = require('../db')
+const { run, get, all } = require('../db')
 const { auth } = require('../middleware/auth')
-const { validateId, validateString, handleValidationError } = require('../utils/validate')
+const { validateId, validateString, validatePagination, handleValidationError } = require('../utils/validate')
 
 const router = new Router({ prefix: '/api/quotes' })
 
@@ -26,10 +26,12 @@ router.post('/favorite', auth, async (ctx) => {
 
 // 获取我的收藏
 router.get('/favorites', auth, async (ctx) => {
+  const { page, size, offset } = validatePagination(ctx, { page: 1, size: 100, maxSize: 200 })
   const favorites = await all(`
-    SELECT * FROM quote_favorites WHERE user_id = ? ORDER BY created_at DESC
-  `, [ctx.state.user.id])
-  ctx.body = { code: 200, data: favorites }
+    SELECT * FROM quote_favorites WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?
+  `, [ctx.state.user.id, size, offset])
+  const { total } = await get('SELECT COUNT(*) as total FROM quote_favorites WHERE user_id = ?', [ctx.state.user.id])
+  ctx.body = { code: 200, data: { list: favorites, total, page, size } }
 })
 
 // 取消收藏

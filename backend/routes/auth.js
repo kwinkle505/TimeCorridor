@@ -2,9 +2,12 @@ const Router = require('koa-router')
 const bcrypt = require('bcryptjs')
 const { run, get } = require('../db')
 const { generateToken } = require('../middleware/auth')
+const { rateLimit } = require('../middleware/rateLimit')
 const { validateString, handleValidationError } = require('../utils/validate')
 
 const router = new Router({ prefix: '/api/auth' })
+
+const authLimit = rateLimit({ windowMs: 60000, max: 5 })
 
 // 密码长度标准（全局统一）
 const PASSWORD_MIN = 6
@@ -14,8 +17,8 @@ const USERNAME_MAX = 20
 const NICKNAME_MAX = 30
 
 // 注册
-router.post('/register', async (ctx) => {
-  const { username, password, nickname } = ctx.request.body
+router.post('/register', authLimit, async (ctx) => {
+  const { username, password, nickname, gender } = ctx.request.body
 
   try {
     const validUsername = validateString(username, {
@@ -44,13 +47,14 @@ router.post('/register', async (ctx) => {
     }
 
     const safeNickname = validNickname || validUsername
+    const safeGender = ['male', 'female', 'secret'].includes(gender) ? gender : 'secret'
     const hash = bcrypt.hashSync(validPassword, 10)
     const result = await run(`
-      INSERT INTO users (username, password_hash, nickname)
-      VALUES (?, ?, ?)
-    `, [validUsername, hash, safeNickname])
+      INSERT INTO users (username, password_hash, nickname, gender)
+      VALUES (?, ?, ?, ?)
+    `, [validUsername, hash, safeNickname, safeGender])
 
-    const user = await get('SELECT id, username, nickname, role, avatar FROM users WHERE id = ?', [result.lastID])
+    const user = await get('SELECT id, username, nickname, role, avatar, gender FROM users WHERE id = ?', [result.lastID])
     const token = generateToken(user)
 
     ctx.body = {
@@ -64,7 +68,7 @@ router.post('/register', async (ctx) => {
 })
 
 // 登录
-router.post('/login', async (ctx) => {
+router.post('/login', authLimit, async (ctx) => {
   const { username, password } = ctx.request.body
 
   try {
@@ -99,7 +103,8 @@ router.post('/login', async (ctx) => {
         username: user.username,
         nickname: user.nickname,
         role: user.role,
-        avatar: user.avatar
+        avatar: user.avatar,
+        gender: user.gender || 'secret'
       },
       token
     }

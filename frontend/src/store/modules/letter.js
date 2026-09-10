@@ -76,8 +76,9 @@ const actions = {
   async initData({ commit }) {
     commit('SET_LOADING', true)
     try {
-      const letters = await letterApi.getMyLetters()
-      commit('SET_LETTERS', letters || [])
+      const data = await letterApi.getMyLetters()
+      const letters = (data && data.list) || []
+      commit('SET_LETTERS', letters)
     } catch (err) {
       console.error('获取信件列表失败:', err)
       commit('SET_LETTERS', [])
@@ -94,6 +95,7 @@ const actions = {
       const data = await letterApi.getPublicLetters({ page: 1, size: 100 })
       const formatted = (data.list || []).map(l => ({
         id: l.id,
+        userId: l.user_id,
         recipient: l.recipient || '',
         salutation: l.salutation || '',
         content: l.content || '',

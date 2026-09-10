@@ -204,9 +204,9 @@ export default {
     },
     handleUserCommand(cmd) {
       if (cmd === 'profile') {
-        this.$router.push('/profile');
+        if (this.$route.path !== '/profile') this.$router.push('/profile');
       } else if (cmd === 'admin') {
-        this.$router.push('/admin');
+        if (this.$route.path !== '/admin') this.$router.push('/admin');
       } else if (cmd === 'logout') {
         this.$store.dispatch('auth/logout');
         this.$message.success('已退出登录');

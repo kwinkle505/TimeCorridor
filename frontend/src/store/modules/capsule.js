@@ -129,33 +129,36 @@ const actions = {
    * 保存胶囊（新增）
    */
   async saveCapsule({ commit }, payload) {
-    try {
-      const result = await capsuleApi.createCapsule({
-        name: payload.name || '无标题胶囊',
-        items: payload.items || [],
-        openDate: payload.openDate || null,
-        isPublic: payload.isPublic || false
-      })
-      const color = CAPSULE_COLORS[Math.floor(Math.random() * CAPSULE_COLORS.length)]
-      const newCapsule = {
-        id: result.id,
-        name: payload.name || '无标题胶囊',
-        items: payload.items || [],
-        sealDate: new Date().toISOString(),
-        openDate: payload.openDate || null,
-        isPublic: payload.isPublic || false,
-        isOpened: false,
-        opened: false,
-        color,
-        likes: 0,
-        createTime: new Date().toISOString()
-      }
-      commit('ADD_CAPSULE', newCapsule)
-      return newCapsule
-    } catch (err) {
-      console.error('保存胶囊失败:', err)
-      return null
+    const rawDate = payload.openDate
+    let openDateStr = null
+    if (rawDate) {
+      const d = new Date(rawDate)
+      if (isNaN(d.getTime())) throw new Error('开启日期无效')
+      openDateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
     }
+
+    const result = await capsuleApi.createCapsule({
+      name: payload.name || '无标题胶囊',
+      items: payload.items || [],
+      openDate: openDateStr,
+      isPublic: payload.isPublic || false
+    })
+    const color = CAPSULE_COLORS[Math.floor(Math.random() * CAPSULE_COLORS.length)]
+    const newCapsule = {
+      id: result.id,
+      name: payload.name || '无标题胶囊',
+      items: payload.items || [],
+      sealDate: new Date().toISOString(),
+      openDate: openDateStr,
+      isPublic: payload.isPublic || false,
+      isOpened: false,
+      opened: false,
+      color,
+      likes: 0,
+      createTime: new Date().toISOString()
+    }
+    commit('ADD_CAPSULE', newCapsule)
+    return newCapsule
   },
 
   /**

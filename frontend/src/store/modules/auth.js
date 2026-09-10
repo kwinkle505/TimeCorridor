@@ -57,7 +57,7 @@ const actions = {
       // 设置用户级存储作用域
       setUserId(user.id)
       // 同步到 localStorage 供旧组件使用
-      storage.set(CURRENT_USER_KEY, { id: user.id, username: user.username, nickname: user.nickname, role: user.role })
+      storage.set(CURRENT_USER_KEY, { id: user.id, username: user.username, nickname: user.nickname, role: user.role, gender: user.gender })
       return { success: true, message: '登录成功' }
     } catch (err) {
       return { success: false, message: err.message || '用户名或密码错误' }
@@ -69,10 +69,10 @@ const actions = {
   /**
    * 注册
    */
-  async register({ commit }, { username, password, nickname }) {
+  async register({ commit }, { username, password, nickname, gender }) {
     commit('SET_LOADING', true)
     try {
-      await authApi.register({ username, password, nickname })
+      await authApi.register({ username, password, nickname, gender })
       return { success: true, message: '注册成功，请登录' }
     } catch (err) {
       return { success: false, message: err.message || '注册失败' }
