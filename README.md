@@ -32,9 +32,17 @@
 
 ![时光胶囊](docs/screenshots/capsule.png)
 
+### 胶囊陈列馆
+
+![胶囊陈列馆](docs/screenshots/capsule-gallery.png)
+
 ### 故事墙
 
 ![故事墙](docs/screenshots/stories.png)
+
+### 留言墙
+
+![留言墙](docs/screenshots/wall.png)
 
 ---
 
